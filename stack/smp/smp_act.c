@@ -202,6 +202,7 @@ void smp_send_app_cback(tSMP_CB *p_cb, tSMP_INT_DATA *p_data)
                             (const bt_bdaddr_t *)&p_cb->pairing_bda) || le_only)
                     {
                         p_cb->loc_auth_req &= ~SMP_KP_SUPPORT_BIT;
+                        p_cb->loc_auth_req &= ~SMP_SC_SUPPORT_BIT;
                         p_cb->local_i_key &= ~SMP_SEC_KEY_TYPE_LK;
                         p_cb->local_r_key &= ~SMP_SEC_KEY_TYPE_LK;
                     }
