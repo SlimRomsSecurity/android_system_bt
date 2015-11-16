@@ -299,7 +299,7 @@ static int btif_hf_idx_by_bdaddr(bt_bdaddr_t *bd_addr)
         int i;
         for (i = 0; i < btif_max_hf_clients; ++i)
         {
-            if ((bdcmp(bd_addr->address,
+            if (is_connected(bd_addr) && (bdcmp(bd_addr->address,
                                   btif_hf_cb[i].connected_bda.address) == 0))
                 return i;
         }
@@ -918,7 +918,7 @@ static bt_status_t disconnect( bt_bdaddr_t *bd_addr )
         return BT_STATUS_FAIL;
     }
 
-    if (is_connected(bd_addr) && (idx != BTIF_HF_INVALID_IDX))
+    if (idx != BTIF_HF_INVALID_IDX)
     {
         BTA_AgClose(btif_hf_cb[idx].handle);
         return BT_STATUS_SUCCESS;
@@ -952,7 +952,7 @@ static bt_status_t connect_audio( bt_bdaddr_t *bd_addr )
     if (btif_hf_check_if_slc_connected() != BT_STATUS_SUCCESS)
         return BT_STATUS_NOT_READY;
 
-    if (is_connected(bd_addr) && (idx != BTIF_HF_INVALID_IDX))
+    if (idx != BTIF_HF_INVALID_IDX)
     {
         BTA_AgAudioOpen(btif_hf_cb[idx].handle);
 
@@ -986,7 +986,7 @@ static bt_status_t disconnect_audio( bt_bdaddr_t *bd_addr )
         return BT_STATUS_FAIL;
     }
 
-    if (is_connected(bd_addr) && (idx != BTIF_HF_INVALID_IDX))
+    if (idx != BTIF_HF_INVALID_IDX)
     {
         BTA_AgAudioClose(btif_hf_cb[idx].handle);
         return BT_STATUS_SUCCESS;
@@ -1093,7 +1093,7 @@ static bt_status_t volume_control(bthf_volume_type_t type, int volume,
 
     tBTA_AG_RES_DATA ag_res;
     memset(&ag_res, 0, sizeof(tBTA_AG_RES_DATA));
-    if (is_connected(bd_addr) && (idx != BTIF_HF_INVALID_IDX))
+    if (idx != BTIF_HF_INVALID_IDX)
     {
         ag_res.num = volume;
         BTA_AgResult(btif_hf_cb[idx].handle,
@@ -1157,7 +1157,7 @@ static bt_status_t cops_response(const char *cops, bt_bdaddr_t *bd_addr)
         return BT_STATUS_FAIL;
     }
 
-    if (is_connected(bd_addr) && (idx != BTIF_HF_INVALID_IDX))
+    if (idx != BTIF_HF_INVALID_IDX)
     {
         tBTA_AG_RES_DATA    ag_res;
 
@@ -1195,7 +1195,7 @@ static bt_status_t cind_response(int svc, int num_active, int num_held,
         return BT_STATUS_FAIL;
     }
 
-    if (is_connected(bd_addr) && (idx != BTIF_HF_INVALID_IDX))
+    if (idx != BTIF_HF_INVALID_IDX)
     {
         tBTA_AG_RES_DATA    ag_res;
 
@@ -1241,7 +1241,7 @@ static bt_status_t formatted_at_response(const char *rsp, bt_bdaddr_t *bd_addr)
         return BT_STATUS_FAIL;
     }
 
-    if (is_connected(bd_addr) && (idx != BTIF_HF_INVALID_IDX))
+    if (idx != BTIF_HF_INVALID_IDX)
     {
         /* Format the response and send */
         memset (&ag_res, 0, sizeof (ag_res));
@@ -1276,7 +1276,7 @@ static bt_status_t at_response(bthf_at_response_t response_code,
         return BT_STATUS_FAIL;
     }
 
-    if (is_connected(bd_addr) && (idx != BTIF_HF_INVALID_IDX))
+    if (idx != BTIF_HF_INVALID_IDX)
     {
         send_at_result((response_code == BTHF_AT_RESPONSE_OK) ? BTA_AG_OK_DONE
                         : BTA_AG_OK_ERROR, error_code, idx);
@@ -1318,7 +1318,7 @@ static bt_status_t clcc_response(int index, bthf_call_direction_t dir,
         return BT_STATUS_FAIL;
     }
 
-    if (is_connected(bd_addr) && (idx != BTIF_HF_INVALID_IDX))
+    if (idx != BTIF_HF_INVALID_IDX)
     {
         tBTA_AG_RES_DATA    ag_res;
         int                 xx;
@@ -1737,7 +1737,7 @@ static bt_status_t bind_response(int anum, bthf_hf_indicator_status_t status,
         return BT_STATUS_FAIL;
     }
 
-    if (is_connected(bd_addr) && (idx != BTIF_HF_INVALID_IDX))
+    if (idx != BTIF_HF_INVALID_IDX)
     {
         tBTA_AG_RES_DATA    ag_res;
         int                 xx;
@@ -1778,7 +1778,7 @@ static bt_status_t bind_string_response(const char* res,
         return BT_STATUS_FAIL;
     }
 
-    if (is_connected(bd_addr) && (idx != BTIF_HF_INVALID_IDX))
+    if (idx != BTIF_HF_INVALID_IDX)
     {
         tBTA_AG_RES_DATA    ag_res;
         int                 xx;
