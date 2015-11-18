@@ -249,8 +249,15 @@ void bta_hh_le_register_cmpl(tBTA_GATTC_REG *p_reg)
     else
         bta_hh_cb.gatt_if = BTA_GATTS_INVALID_IF;
 
-    /* signal BTA call back event */
-    (* bta_hh_cb.p_cback)(BTA_HH_ENABLE_EVT, (tBTA_HH *)&status);
+    if (bta_hh_cb.p_cback != NULL)
+    {
+        /* signal BTA call back event */
+        (* bta_hh_cb.p_cback)(BTA_HH_ENABLE_EVT, (tBTA_HH *)&status);
+    }
+    else
+    {
+        APPL_TRACE_ERROR("%s: bta_hh_cb.p_cback is null", __func__);
+    }
 }
 
 /*******************************************************************************
