@@ -203,6 +203,14 @@ extern void BTA_HdSendReport(tBTA_HD_REPORT *p_report)
 
     APPL_TRACE_VERBOSE("%s", __FUNCTION__);
 
+    if (p_report->len > BTA_HD_REPORT_LEN)
+    {
+        APPL_TRACE_WARNING("%s, report len (%d) > MTU len (%d), can't send report."
+            " Increase value of HID_DEV_MTU_SIZE to send larger reports",
+            __FUNCTION__, p_report->len, BTA_HD_REPORT_LEN);
+        return;
+    }
+
     if ((p_buf = (tBTA_HD_SEND_REPORT *) GKI_getbuf(sizeof(tBTA_HD_SEND_REPORT))) != NULL)
     {
         p_buf->hdr.event = BTA_HD_API_SEND_REPORT_EVT;
