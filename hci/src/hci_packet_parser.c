@@ -76,14 +76,16 @@ static void parse_read_local_supported_codecs_response(
     uint8_t *no_of_local_supported_codecs, uint8_t *local_supported_codecs) {
   uint8_t i = 0;
 
-  uint8_t *stream = read_command_complete_header(response, HCI_READ_LOCAL_SUPPORTED_CODECS, 1 /* bytes after */);
-  assert(stream != NULL);
-  STREAM_TO_UINT8(*no_of_local_supported_codecs, stream);
-  for ( i = 0; i < *no_of_local_supported_codecs; i++)
-  {
-    STREAM_TO_UINT8(*local_supported_codecs, stream);
-    local_supported_codecs++;
+  uint8_t *stream = read_command_complete_header(response, HCI_READ_LOCAL_SUPPORTED_CODECS, 0 /* bytes after */);
+  if(stream) {
+    STREAM_TO_UINT8(*no_of_local_supported_codecs, stream);
+    for ( i = 0; i < *no_of_local_supported_codecs; i++)
+    {
+      STREAM_TO_UINT8(*local_supported_codecs, stream);
+      local_supported_codecs++;
+    }
   }
+
   buffer_allocator->free(response);
 }
 
@@ -251,8 +253,10 @@ static uint8_t *read_command_complete_header(
   // Assume the next field is the status field
   STREAM_TO_UINT8(status, stream);
 
-  if (status != HCI_SUCCESS)
+  if (status != HCI_SUCCESS){
+    LOG_ERROR("%s: return status - 0x%x", __func__, status);
     return NULL;
+  }
 
   return stream;
 }
