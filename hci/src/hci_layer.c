@@ -469,9 +469,18 @@ static void event_command_ready(fixed_queue_t *queue, UNUSED_ATTR void *context)
     pthread_mutex_unlock(&commands_pending_response_lock);
 
     // Send it off
+#ifdef BOARD_HAVE_BLUETOOTH_BCM
+    low_power_manager->wake_assert();
+#else
     low_power_manager->stop_idle_timer();
+#endif
     packet_fragmenter->fragment_and_dispatch(wait_entry->command);
+#ifdef BOARD_HAVE_BLUETOOTH_BCM
+    low_power_manager->transmit_done();
+#else
     low_power_manager->start_idle_timer(false);
+#endif
+
   }
 }
 
