@@ -42,6 +42,8 @@
 #include "osi/include/log.h"
 #include "stack_config.h"
 
+#define MAX_SNOOP_BUF_SIZE  (1200)
+
 typedef enum {
   kCommandPacket = 1,
   kAclPacket = 2,
@@ -245,7 +247,7 @@ static void btsnoop_write_packet(packet_type_t type, const uint8_t *packet, bool
   uint64_t ts_begin;
   uint64_t ts_end, ts_diff;
 #endif
-  uint8_t snoop_buf[1200] = {0};
+  uint8_t snoop_buf[MAX_SNOOP_BUF_SIZE] = {0};
   uint32_t offset = 0;
 
   switch (type) {
@@ -299,6 +301,11 @@ static void btsnoop_write_packet(packet_type_t type, const uint8_t *packet, bool
 
   snoop_buf[offset] = type;
   offset += 1;
+  if (offset + length_he + 1 > MAX_SNOOP_BUF_SIZE) {
+    LOG_ERROR("Bad packet length, downgrading the length to %d from %d ",
+                             MAX_SNOOP_BUF_SIZE - offset - 1,length_he);
+    length_he = MAX_SNOOP_BUF_SIZE - offset - 1;
+  }
   memcpy(snoop_buf + offset, packet, length_he - 1);
 
   if (client_socket_btsnoop != -1) {
