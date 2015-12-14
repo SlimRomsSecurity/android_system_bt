@@ -172,9 +172,21 @@ void smp_send_app_cback(tSMP_CB *p_cb, tSMP_INT_DATA *p_data)
                         p_cb->loc_auth_req |= SMP_SC_SUPPORT_BIT;
                     }
 
+                    /* check the adv flag if present */
+                    UINT8 adv_flag = 0;
+                    BOOLEAN le_only = false;
+                    if(btm_ble_get_adv_flag(&adv_flag, p_cb->pairing_bda) == BTM_SUCCESS)
+                    {
+                        if(adv_flag & BTM_BLE_BREDR_NOT_SPT)
+                        {
+                            le_only = true;
+                            SMP_TRACE_DEBUG("%s skipping crosskey based on adv flag", __func__);
+                        }
+                    }
+
                     if (!(p_cb->loc_auth_req & SMP_SC_SUPPORT_BIT)
                         || interop_addr_match(INTEROP_DISABLE_LE_SECURE_CONNECTIONS,
-                            (const bt_bdaddr_t *)&p_cb->pairing_bda))
+                            (const bt_bdaddr_t *)&p_cb->pairing_bda) || le_only)
                     {
                         p_cb->loc_auth_req &= ~SMP_KP_SUPPORT_BIT;
                         p_cb->local_i_key &= ~SMP_SEC_KEY_TYPE_LK;

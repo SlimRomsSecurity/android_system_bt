@@ -956,6 +956,7 @@ extern tINQ_DB_ENT *btm_inq_db_find (BD_ADDR p_bda);
 extern BOOLEAN      btm_inq_find_bdaddr (BD_ADDR p_bda);
 
 extern BOOLEAN btm_lookup_eir(BD_ADDR_PTR p_rem_addr);
+extern tBTM_STATUS btm_ble_get_adv_flag(UINT8* flag, BD_ADDR bda);
 
 /* Internal functions provided by btm_acl.c
 ********************************************

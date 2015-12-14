@@ -2857,6 +2857,38 @@ static void btm_ble_process_adv_pkt_cont(BD_ADDR bda, UINT8 addr_type, UINT8 evt
 
 /*******************************************************************************
 **
+** Function         btm_ble_get_adv_flag
+**
+** Description      Get adv flags for inq db device
+**
+** Returns          tBTM_STATUS
+**
+*******************************************************************************/
+
+tBTM_STATUS btm_ble_get_adv_flag(UINT8* flag, BD_ADDR bda)
+{
+    tINQ_DB_ENT *p_i;
+    tBTM_INQ_RESULTS *p_cur;
+    tBTM_STATUS rt = BTM_NO_RESOURCES;
+
+    p_i = btm_inq_db_find (bda);
+    if(!p_i)
+    {
+        BTM_TRACE_ERROR("%s, bda entry not found", __func__);
+        return rt;
+    }
+    p_cur = &p_i->inq_info.results;
+    if(p_cur->device_type & BT_DEVICE_TYPE_BLE)
+    {
+        *flag = p_cur->flag;
+        rt = BTM_SUCCESS;
+    }
+
+    return rt;
+}
+
+/*******************************************************************************
+**
 ** Function         btm_ble_start_scan
 **
 ** Description      Start the BLE scan.
