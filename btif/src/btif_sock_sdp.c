@@ -424,7 +424,7 @@ static int add_dun_sdp(const char *name, const int channel)
 
   // Create the base SDP record.
   char *stage = "create_base_record";
-  if (!create_base_record(handle, name, channel, TRUE /* with_obex */))
+  if (!create_base_record(handle, name, channel, FALSE /* with_obex */))
     goto error;
 
   // Add service class.
