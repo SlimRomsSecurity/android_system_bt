@@ -404,22 +404,27 @@ static void btgatts_handle_event(uint16_t event, char* p_param)
                 BTA_DmBleSetBgConnType(BTM_BLE_CONN_AUTO, NULL);
             BTIF_TRACE_DEBUG ("%s, device type: %d", __func__, device_type);
 
-            switch(device_type)
+            if(p_cb->transport != GATT_TRANSPORT_AUTO)
+                transport = p_cb->transport;
+            else
             {
-                case BT_DEVICE_TYPE_BREDR:
-                    transport = BTA_GATT_TRANSPORT_BR_EDR;
-                    break;
-
-                case BT_DEVICE_TYPE_BLE:
-                    transport = BTA_GATT_TRANSPORT_LE;
-                    break;
-
-                case BT_DEVICE_TYPE_DUMO:
-                    if (p_cb->transport == GATT_TRANSPORT_LE)
-                        transport = BTA_GATT_TRANSPORT_LE;
-                    else
+                switch(device_type)
+                {
+                    case BT_DEVICE_TYPE_BREDR:
                         transport = BTA_GATT_TRANSPORT_BR_EDR;
-                    break;
+                        break;
+
+                    case BT_DEVICE_TYPE_BLE:
+                        transport = BTA_GATT_TRANSPORT_LE;
+                        break;
+
+                    case BT_DEVICE_TYPE_DUMO:
+                        if (p_cb->transport == GATT_TRANSPORT_LE)
+                            transport = BTA_GATT_TRANSPORT_LE;
+                        else
+                            transport = BTA_GATT_TRANSPORT_BR_EDR;
+                        break;
+                }
             }
 
             // Connect!
