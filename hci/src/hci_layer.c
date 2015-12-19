@@ -538,6 +538,8 @@ static void command_timed_out(UNUSED_ATTR void *context) {
 // This function is not required to read all of a packet in one go, so
 // be wary of reentry. But this function must return after finishing a packet.
 static void hal_says_data_ready(serial_data_type_t type) {
+  LOG_VERBOSE("%s", __func__);
+
   packet_receive_data_t *incoming = &incoming_packets[PACKET_TYPE_TO_INBOUND_INDEX(type)];
 
 #ifdef QCOM_WCN_SSR
@@ -547,6 +549,7 @@ static void hal_says_data_ready(serial_data_type_t type) {
 
   uint8_t byte;
   while (hal->read_data(type, &byte, 1, false) != 0) {
+    LOG_VERBOSE("%s, incoming state is %d", __func__, incoming->state);
 #ifdef QCOM_WCN_SSR
     reset = hal->dev_in_reset();
     if (reset) {
@@ -634,6 +637,8 @@ static void hal_says_data_ready(serial_data_type_t type) {
     }
 
     if (incoming->state == FINISHED) {
+      LOG_VERBOSE("%s, finished receiving", __func__);
+
       incoming->buffer->len = incoming->index;
       btsnoop->capture(incoming->buffer, true);
 
@@ -645,6 +650,7 @@ static void hal_says_data_ready(serial_data_type_t type) {
         uint8_t event_code;
         STREAM_TO_UINT8(event_code, stream);
 
+        LOG_VERBOSE("%s, dispatch packet", __func__);
         data_dispatcher_dispatch(
           interface.event_dispatcher,
           event_code,
@@ -660,6 +666,7 @@ static void hal_says_data_ready(serial_data_type_t type) {
       // We return after a packet is finished for two reasons:
       // 1. The type of the next packet could be different.
       // 2. We don't want to hog cpu time.
+      LOG_VERBOSE("%s, return back", __func__);
       return;
     }
   }
