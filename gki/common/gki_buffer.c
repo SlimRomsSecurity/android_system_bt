@@ -244,6 +244,7 @@ void *GKI_getpoolbuf (UINT8 pool_id)
 *******************************************************************************/
 void GKI_freebuf (void *p_buf)
 {
+  assert(p_buf != NULL);
   osi_free((BUFFER_HDR_T *)p_buf - 1);
 }
 
@@ -261,6 +262,7 @@ void GKI_freebuf (void *p_buf)
 *******************************************************************************/
 UINT16 GKI_get_buf_size (void *p_buf)
 {
+  assert(p_buf != NULL);
   BUFFER_HDR_T *header = (BUFFER_HDR_T *)p_buf - 1;
   return header->size;
 }
