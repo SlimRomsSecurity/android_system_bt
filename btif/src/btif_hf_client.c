@@ -80,6 +80,7 @@ char   btif_hf_client_version[PROPERTY_VALUE_MAX];
 static UINT32 btif_hf_client_features = 0;
 static TIMER_LIST_ENT tle_hfp_client_open_SCO;
 static TIMER_LIST_ENT tle_hfp_client_close_SCO;
+bool in_mo_call_setup = false;
 
 #define CHECK_BTHF_CLIENT_INIT() if (bt_hf_client_callbacks == NULL)\
     {\
@@ -778,8 +779,9 @@ static void process_ind_evt(tBTA_HF_CLIENT_IND *ind)
                     BTIF_TRACE_DEBUG("Call disconnected, stop SCO open timer");
                     btu_stop_timer(&tle_hfp_client_open_SCO);
                 }
-                if (BTM_GetNumScoLinks())
+                if (BTM_GetNumScoLinks() && in_mo_call_setup != true)
                 {
+                    BTIF_TRACE_DEBUG("No MO call in setup, starting SCO close timer");
                     // Start timer to disconnect SCO
                     memset(&tle_hfp_client_close_SCO, 0, sizeof(tle_hfp_client_close_SCO));
                     tle_hfp_client_close_SCO.param = (UINT32)btif_initiate_close_SCO_tmr_hdlr;
@@ -791,6 +793,24 @@ static void process_ind_evt(tBTA_HF_CLIENT_IND *ind)
             break;
 
         case BTA_HF_CLIENT_IND_CALLSETUP:
+            if (ind->value == BTHF_CLIENT_CALLSETUP_OUTGOING ||
+                ind->value == BTHF_CLIENT_CALLSETUP_ALERTING)
+            {
+                BTIF_TRACE_DEBUG("MO call setup in progress, set the flag");
+                in_mo_call_setup = true;
+                if (tle_hfp_client_close_SCO.in_use)
+                {
+                    BTIF_TRACE_DEBUG("stop SCO close timer");
+                    btu_stop_timer(&tle_hfp_client_close_SCO);
+                }
+            }
+
+            if (ind->value == BTHF_CLIENT_CALLSETUP_NONE &&
+                in_mo_call_setup == true)
+            {
+                BTIF_TRACE_DEBUG("Done with MO call setup, reset the flag");
+                in_mo_call_setup = false;
+            }
             HAL_CBACK(bt_hf_client_callbacks, callsetup_cb, ind->value);
             break;
         case BTA_HF_CLIENT_IND_CALLHELD:
