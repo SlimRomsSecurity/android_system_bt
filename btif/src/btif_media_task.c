@@ -783,6 +783,8 @@ bool btif_a2dp_start_media_task(void)
     APPL_TRACE_IMP("## A2DP START MEDIA THREAD ##");
 
     btif_media_cmd_msg_queue = fixed_queue_new(SIZE_MAX);
+    if (btif_media_cmd_msg_queue == NULL)
+        goto error_exit;
 
     /* start a2dp media task */
     worker_thread = thread_new("media_worker");
