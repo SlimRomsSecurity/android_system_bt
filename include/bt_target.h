@@ -897,6 +897,13 @@
 #define BLE_BATCH_SCAN_INCLUDED  TRUE
 #endif
 
+
+/*
+ * Enables or disables support for LE secure connections
+ */
+#ifndef BLE_SC_INCLUDED
+#define BLE_SC_INCLUDED         TRUE
+#endif
 /******************************************************************************
 **
 ** ATT/GATT Protocol/Profile Settings

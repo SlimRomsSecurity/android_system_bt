@@ -71,10 +71,12 @@ void smp_l2cap_if_init (void)
 
     L2CA_RegisterFixedChannel (L2CAP_SMP_CID, &fixed_reg);
 
+#if (defined BLE_SC_INCLUDED && BLE_SC_INCLUDED == TRUE)
     fixed_reg.pL2CA_FixedConn_Cb = smp_br_connect_callback;
     fixed_reg.pL2CA_FixedData_Cb = smp_br_data_received;
 
     L2CA_RegisterFixedChannel (L2CAP_SMP_BR_CID, &fixed_reg);
+#endif
 }
 
 /*******************************************************************************
