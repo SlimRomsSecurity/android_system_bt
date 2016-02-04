@@ -556,7 +556,12 @@ void btif_enable_bluetooth_evt(tBTA_STATUS status)
 
     BTIF_TRACE_DEBUG("%s: status %d, local bd [%s]", __FUNCTION__, status, bdstr);
 
-    ssr_triggered = FALSE;
+    if(ssr_triggered)
+    {
+       BTIF_TRACE_DEBUG("%s: Enable timeout happend", __FUNCTION__);
+       ssr_triggered = FALSE;
+       return;
+    }
 
     if (bdcmp(btif_local_bd_addr.address, controller->get_address()->address))
     {
