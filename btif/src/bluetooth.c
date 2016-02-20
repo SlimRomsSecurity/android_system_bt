@@ -186,7 +186,9 @@ static void cleanup(void) {
 
 static void ssrcleanup(void)
 {
+#ifdef QCA_BT_ROME
     btif_ssr_cleanup();
+#endif
     return;
 }
 
