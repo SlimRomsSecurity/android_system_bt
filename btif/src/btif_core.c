@@ -442,18 +442,6 @@ static void btif_fetch_local_bdaddr(bt_bdaddr_t *local_addr)
         valid_bda = btif_fetch_property(FACTORY_BT_ADDR_PROPERTY, local_addr);
     }
 
-    /* No factory BDADDR found. Look for BDA in ro.boot.btmacaddr */
-    if ((!valid_bda) && \
-        (property_get("ro.boot.btmacaddr", val, NULL)))
-    {
-        valid_bda = string_to_bdaddr(val, local_addr);
-        if (valid_bda) {
-            BTIF_TRACE_DEBUG("Got vendor BDA %02X:%02X:%02X:%02X:%02X:%02X",
-                local_addr->address[0], local_addr->address[1], local_addr->address[2],
-                local_addr->address[3], local_addr->address[4], local_addr->address[5]);
-        }
-    }
-
     if (!valid_bda && fetch_vendor_addr(local_addr))
     {
         valid_bda = TRUE;
