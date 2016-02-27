@@ -52,6 +52,7 @@
 #include "bta_hf_client_api.h"
 #include "bta_hd_api.h"
 #include "avrc_defs.h"
+#include "btif_av.h"
 
 /************************************************************************************
 **  Constants & Macros
@@ -513,6 +514,7 @@ const char *dump_rc_event(UINT8 event)
         CASE_RETURN_STR(BTA_AV_META_MSG_EVT)
         CASE_RETURN_STR(BTA_AV_RC_FEAT_EVT)
         CASE_RETURN_STR(BTA_AV_BROWSE_MSG_EVT)
+        CASE_RETURN_STR(BTIF_AV_CLEANUP_REQ_EVT)
         default:
             return "UNKNOWN_EVENT";
    }
