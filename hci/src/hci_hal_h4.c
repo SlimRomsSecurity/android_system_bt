@@ -131,6 +131,7 @@ static void hal_close() {
   eager_reader_free(uart_stream);
 #endif
 
+  uart_stream = NULL;
   vendor->send_command(VENDOR_CLOSE_USERIAL, NULL);
   uart_fd = INVALID_FD;
 }
