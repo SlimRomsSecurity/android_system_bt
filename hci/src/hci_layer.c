@@ -170,6 +170,8 @@ static bool filter_incoming_event(BT_HDR *packet);
 static serial_data_type_t event_to_data_type(uint16_t event);
 static waiting_command_t *get_waiting_command(command_opcode_t opcode);
 
+static bool create_hw_reset_evt_packet(packet_receive_data_t *incoming);
+
 void ssr_cleanup (int reason);
 
 // Module lifecycle functions
@@ -562,7 +564,6 @@ static void hal_says_data_ready(serial_data_type_t type) {
   packet_receive_data_t *incoming = &incoming_packets[PACKET_TYPE_TO_INBOUND_INDEX(type)];
 
 #ifdef QCOM_WCN_SSR
-  uint8_t dev_ssr_event[3] = { 0x10, 0x01, 0x0A };
   uint8_t reset;
 #endif
 
@@ -572,20 +573,8 @@ static void hal_says_data_ready(serial_data_type_t type) {
 #ifdef QCOM_WCN_SSR
     reset = hal->dev_in_reset();
     if (reset) {
-      incoming = &incoming_packets[PACKET_TYPE_TO_INBOUND_INDEX(type = DATA_TYPE_EVENT)];
-      incoming->buffer = (BT_HDR *)buffer_allocator->alloc(BT_HDR_SIZE + 3);
-      if (incoming->buffer) {
-        LOG_ERROR("sending H/w error event to stack\n ");
-        incoming->buffer->offset = 0;
-        incoming->buffer->layer_specific = 0;
-        incoming->buffer->event = MSG_HC_TO_STACK_HCI_EVT;
-        incoming->index = 3;
-        memcpy(incoming->buffer->data, &dev_ssr_event, 3);
-        incoming->state = FINISHED;
-      } else {
-        LOG_ERROR("error getting buffer for H/W event\n ");
+      if(!create_hw_reset_evt_packet(incoming))
         break;
-      }
     } else
 #endif
     {
@@ -607,6 +596,15 @@ static void hal_says_data_ready(serial_data_type_t type) {
           incoming->bytes_remaining = (type == DATA_TYPE_ACL) ? RETRIEVE_ACL_LENGTH(incoming->preamble) : byte;
 
           size_t buffer_size = BT_HDR_SIZE + incoming->index + incoming->bytes_remaining;
+
+          if (buffer_size > GKI_MAX_BUF_SIZE) {
+            LOG_ERROR("%s buffer_size(%d) exceeded allowed packet size, allocation not possible", __func__, buffer_size);
+            if(create_hw_reset_evt_packet(incoming))
+              break;
+            else
+              return;
+          }
+
           incoming->buffer = (BT_HDR *)buffer_allocator->alloc(buffer_size);
 
           if (!incoming->buffer) {
@@ -862,6 +860,26 @@ static void init_layer_interface() {
     interface.transmit_downward = transmit_downward;
     interface.ssr_cleanup = ssr_cleanup;
     interface_created = true;
+  }
+}
+
+static bool create_hw_reset_evt_packet(packet_receive_data_t *incoming) {
+  serial_data_type_t type;
+  uint8_t dev_ssr_event[3] = { 0x10, 0x01, 0x0A };
+  incoming = &incoming_packets[PACKET_TYPE_TO_INBOUND_INDEX(type = DATA_TYPE_EVENT)];
+  incoming->buffer = (BT_HDR *)buffer_allocator->alloc(BT_HDR_SIZE + 3);
+  if (incoming->buffer) {
+    LOG_ERROR("sending H/w error event to stack\n ");
+    incoming->buffer->offset = 0;
+    incoming->buffer->layer_specific = 0;
+    incoming->buffer->event = MSG_HC_TO_STACK_HCI_EVT;
+    incoming->index = 3;
+    memcpy(incoming->buffer->data, &dev_ssr_event, 3);
+    incoming->state = FINISHED;
+    return true;
+  } else {
+    LOG_ERROR("error getting buffer for H/W event\n ");
+    return false;
   }
 }
 
