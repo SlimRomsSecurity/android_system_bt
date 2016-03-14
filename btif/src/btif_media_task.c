@@ -517,6 +517,14 @@ static void btif_recv_ctrl_data(void)
                 a2dp_cmd_acknowledge(A2DP_CTRL_ACK_INCALL_FAILURE);
                 break;
             }
+
+            if (btif_media_cb.is_tx_timer == TRUE)
+            {
+                APPL_TRACE_IMP("Unexpected HAL Start. Stream in started state, bail out");
+                a2dp_cmd_acknowledge(A2DP_CTRL_ACK_FAILURE);
+                break;
+            }
+
             /* In Dual A2dp, first check for started state of stream
             * as we dont want to START again as while doing Handoff
             * the stack state will be started, so it is not needed
@@ -797,6 +805,8 @@ bool btif_a2dp_start_media_task(void)
         NULL);
 
     thread_post(worker_thread, btif_media_thread_init, NULL);
+
+    btif_media_cb.is_tx_timer = FALSE;
 
     APPL_TRACE_IMP("## A2DP MEDIA THREAD STARTED ##");
 
