@@ -27,6 +27,7 @@
 #include "osi/include/alarm.h"
 #include "osi/include/allocator.h"
 #include "btcore/include/bdaddr.h"
+#include "btif_common.h"
 #include "btif_config.h"
 #include "btif_config_transcode.h"
 #include "btif_util.h"
@@ -359,6 +360,7 @@ void btif_config_flush(void) {
   assert(alarm_timer != NULL);
 
   alarm_cancel(alarm_timer);
+  btif_config_write(0, NULL);
 
   btif_config_write(0, NULL);
   pthread_mutex_lock(&lock);
@@ -387,6 +389,9 @@ int btif_config_clear(void){
 }
 
 static void timer_config_save_cb(UNUSED_ATTR void *data) {
+  // Moving file I/O to btif context instead of timer callback because
+  // it usually takes a lot of time to be completed, introducing
+  // delays during A2DP playback causing blips or choppiness.
   btif_transfer_context(btif_config_write, 0, NULL, 0, NULL);
 }
 
