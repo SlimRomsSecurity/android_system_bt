@@ -62,8 +62,7 @@ enum
     BTM_SUCCESS_NO_SECURITY,            /* 17 security passed, no security set  */
     BTM_FAILED_ON_SECURITY,             /* 18 security failed                   */
     BTM_REPEATED_ATTEMPTS,              /* 19 repeated attempts for LE security requests */
-    BTM_MODE4_LEVEL4_NOT_SUPPORTED,      /* 20 Secure Connections Only Mode can't be supported */
-    BTM_ERR_KEY_MISSING                 /* 21 Pin or Key Missing*/
+    BTM_MODE4_LEVEL4_NOT_SUPPORTED      /* 20 Secure Connections Only Mode can't be supported */
 };
 
 typedef uint8_t tBTM_STATUS;
@@ -1429,6 +1428,8 @@ typedef UINT8 tBTM_IO_CAP;
 
 #define BTM_BLE_INITIATOR_KEY_SIZE 15
 #define BTM_BLE_RESPONDER_KEY_SIZE 15
+#define BTM_BLE_INITIATOR_LEGACY_KEY 7
+#define BTM_BLE_RESPONDER_LEGACY_KEY 7
 #define BTM_BLE_MAX_KEY_SIZE       16
 
 typedef UINT8 tBTM_AUTH_REQ;

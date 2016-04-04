@@ -1855,8 +1855,11 @@ void bta_dm_sdp_result (tBTA_DM_MSG *p_data)
             bta_dm_search_cb.wait_disc = FALSE;
 
         /* not able to connect go to next device */
-        GKI_freebuf(bta_dm_search_cb.p_sdp_db);
-        bta_dm_search_cb.p_sdp_db = NULL;
+        if(bta_dm_search_cb.p_sdp_db)
+        {
+            GKI_freebuf(bta_dm_search_cb.p_sdp_db);
+            bta_dm_search_cb.p_sdp_db = NULL;
+        }
 
         BTM_SecDeleteRmtNameNotifyCallback(&bta_dm_service_search_remname_cback);
 
@@ -4350,9 +4353,6 @@ void bta_dm_encrypt_cback(BD_ADDR bd_addr, tBT_TRANSPORT transport, void *p_ref_
             break;
         case BTM_BUSY:
             bta_status = BTA_BUSY;
-            break;
-        case BTM_ERR_KEY_MISSING:
-            bta_status = BTA_ERR_KEY_MISSING;
             break;
         default:
             bta_status = BTA_FAILURE;

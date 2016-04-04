@@ -297,7 +297,8 @@ void bta_hl_clean_mdl_cb(UINT8 app_idx, UINT8 mcl_idx, UINT8 mdl_idx)
 BT_HDR * bta_hl_get_buf(UINT16 data_size)
 {
     BT_HDR *p_new;
-    UINT16 size = data_size + L2CAP_MIN_OFFSET + BT_HDR_SIZE;
+    UINT16 size = data_size + L2CAP_MIN_OFFSET + BT_HDR_SIZE + L2CAP_FCS_LEN
+                                             + L2CAP_EXT_CONTROL_OVERHEAD;
 
     if (size < GKI_MAX_BUF_SIZE)
     {

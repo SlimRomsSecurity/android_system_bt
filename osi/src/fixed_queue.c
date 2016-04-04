@@ -26,6 +26,7 @@
 #include "osi/include/osi.h"
 #include "osi/include/semaphore.h"
 #include "osi/include/reactor.h"
+#include "osi/include/log.h"
 
 typedef struct fixed_queue_t {
   list_t *list;
@@ -43,23 +44,31 @@ static void internal_dequeue_ready(void *context);
 
 fixed_queue_t *fixed_queue_new(size_t capacity) {
   fixed_queue_t *ret = osi_calloc(sizeof(fixed_queue_t));
-  if (!ret)
+  if (!ret) {
+     LOG_ERROR("%s:Failed to allocate memory", __func__);
     goto error;
+  }
 
   pthread_mutex_init(&ret->lock, NULL);
   ret->capacity = capacity;
 
   ret->list = list_new(NULL);
-  if (!ret->list)
+  if (!ret->list) {
+     LOG_ERROR("%s:List is NULL", __func__);
     goto error;
+  }
 
   ret->enqueue_sem = semaphore_new(capacity);
-  if (!ret->enqueue_sem)
+  if (!ret->enqueue_sem) {
+     LOG_ERROR("%s:enqueue_sem is NULL", __func__);
     goto error;
+  }
 
   ret->dequeue_sem = semaphore_new(0);
-  if (!ret->dequeue_sem)
+  if (!ret->dequeue_sem) {
+     LOG_ERROR("%s:dequeue_sem is NULL", __func__);
     goto error;
+  }
 
   return ret;
 
@@ -147,8 +156,10 @@ bool fixed_queue_try_enqueue(fixed_queue_t *queue, void *data) {
 void *fixed_queue_try_dequeue(fixed_queue_t *queue) {
   assert(queue != NULL);
 
-  if (!semaphore_try_wait(queue->dequeue_sem))
-    return NULL;
+  if (!semaphore_try_wait(queue->dequeue_sem)) {
+      LOG_ERROR("%s:Failed to dequeue_sem", __func__);
+      return NULL;
+  }
 
   pthread_mutex_lock(&queue->lock);
   void *ret = list_front(queue->list);

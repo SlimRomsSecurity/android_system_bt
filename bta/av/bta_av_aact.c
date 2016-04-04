@@ -579,7 +579,7 @@ static void bta_av_proc_stream_evt(UINT8 handle, BD_ADDR bd_addr, UINT8 event, t
     {
         bta_av_conn_cback(handle, bd_addr, event, p_data);
     }
-    else
+    else if (!p_data)
     {
         APPL_TRACE_DEBUG("%s: p_data is null", __func__);
     }

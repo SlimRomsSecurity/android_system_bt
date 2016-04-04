@@ -2797,6 +2797,7 @@ static void btm_ble_process_adv_pkt_cont(BD_ADDR bda, UINT8 addr_type, UINT8 evt
     {
         p_inq->inq_cmpl_info.num_resp++;
     }
+    p_i->time_of_resp = GKI_get_os_tick_count();
     /* update the LE device information in inquiry database */
     if (!btm_ble_update_inq_result(p_i, addr_type, evt_type, p))
         return;

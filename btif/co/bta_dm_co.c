@@ -36,14 +36,23 @@ tBTE_APPL_CFG bte_appl_cfg = { 0x1, 0x4, 0x7, 0x7, 0x10 };
 #else
 tBTE_APPL_CFG bte_appl_cfg =
 {
+#if (defined BLE_SC_INCLUDED && BLE_SC_INCLUDED == TRUE)
 #if SMP_INCLUDED == TRUE
     BTA_LE_AUTH_REQ_SC_MITM_BOND, // Authentication requirements
 #else
     BTM_AUTH_SPGB_YES,            // Authentication requirements
 #endif
+#else
+    BTM_AUTH_SPGB_YES,            // Authentication requirements
+#endif
     BTM_LOCAL_IO_CAPS_BLE,
+#if (defined BLE_SC_INCLUDED && BLE_SC_INCLUDED == TRUE)
     BTM_BLE_INITIATOR_KEY_SIZE,
     BTM_BLE_RESPONDER_KEY_SIZE,
+#else
+    BTM_BLE_INITIATOR_LEGACY_KEY,
+    BTM_BLE_RESPONDER_LEGACY_KEY,
+#endif
     BTM_BLE_MAX_KEY_SIZE
 };
 #endif

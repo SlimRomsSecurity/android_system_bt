@@ -211,7 +211,7 @@ BOOLEAN gatt_disconnect (tGATT_TCB *p_tcb)
 {
     BOOLEAN             ret = FALSE;
     tGATT_CH_STATE      ch_state;
-    GATT_TRACE_DEBUG ("gatt_disconnect ");
+    GATT_TRACE_WARNING ("gatt_disconnect ");
 
     if (p_tcb != NULL)
     {
@@ -233,7 +233,14 @@ BOOLEAN gatt_disconnect (tGATT_TCB *p_tcb)
             }
             else
             {
-                ret = L2CA_DisconnectReq(p_tcb->att_lcid);
+                if ((ch_state == GATT_CH_OPEN) || (ch_state == GATT_CH_CFG))
+                {
+                    ret = L2CA_DisconnectReq(p_tcb->att_lcid);
+                }
+                else
+                {
+                    GATT_TRACE_DEBUG ("gatt_disconnect channel not opened");
+                }
             }
         }
         else

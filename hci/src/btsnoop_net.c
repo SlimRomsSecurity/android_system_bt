@@ -100,6 +100,7 @@ void btsnoop_net_close() {
 
 void btsnoop_net_write(const void *data, size_t length) {
   ssize_t ret;
+
   pthread_mutex_lock(&client_socket_lock_);
   if (client_socket_btsnoop != -1) {
     do {

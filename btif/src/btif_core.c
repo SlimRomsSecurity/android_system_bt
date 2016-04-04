@@ -446,18 +446,6 @@ static void btif_fetch_local_bdaddr(bt_bdaddr_t *local_addr)
         valid_bda = btif_fetch_property(FACTORY_BT_ADDR_PROPERTY, local_addr);
     }
 
-    /* No factory BDADDR found. Look for BDA in ro.boot.btmacaddr */
-    if ((!valid_bda) && \
-        (property_get("ro.boot.btmacaddr", val, NULL)))
-    {
-        valid_bda = string_to_bdaddr(val, local_addr);
-        if (valid_bda) {
-            BTIF_TRACE_DEBUG("Got vendor BDA %02X:%02X:%02X:%02X:%02X:%02X",
-                local_addr->address[0], local_addr->address[1], local_addr->address[2],
-                local_addr->address[3], local_addr->address[4], local_addr->address[5]);
-        }
-    }
-
     if (!valid_bda && fetch_vendor_addr(local_addr))
     {
         valid_bda = TRUE;
@@ -560,7 +548,12 @@ void btif_enable_bluetooth_evt(tBTA_STATUS status)
 
     BTIF_TRACE_DEBUG("%s: status %d, local bd [%s]", __FUNCTION__, status, bdstr);
 
-    ssr_triggered = FALSE;
+    if(ssr_triggered)
+    {
+       BTIF_TRACE_DEBUG("%s: Enable timeout happend", __FUNCTION__);
+       ssr_triggered = FALSE;
+       return;
+    }
 
     if (bdcmp(btif_local_bd_addr.address, controller->get_address()->address))
     {

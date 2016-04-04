@@ -80,6 +80,12 @@ typedef enum {
   FINISHED
 } receive_state_t;
 
+typedef enum {
+  HCI_SHUTDOWN,
+  HCI_SSR_CLEANUP,
+  HCI_STARTED
+} hci_layer_state;
+
 typedef struct {
   receive_state_t state;
   uint16_t bytes_remaining;
@@ -140,6 +146,7 @@ static packet_receive_data_t incoming_packets[INBOUND_PACKET_TYPE_COUNT];
 // The hand-off point for data going to a higher layer, set by the higher layer
 static fixed_queue_t *upwards_data_queue;
 
+static int hci_state;
 static future_t *shut_down();
 
 static void event_finish_startup(void *context);
@@ -162,6 +169,8 @@ static bool filter_incoming_event(BT_HDR *packet);
 
 static serial_data_type_t event_to_data_type(uint16_t event);
 static waiting_command_t *get_waiting_command(command_opcode_t opcode);
+
+static bool create_hw_reset_evt_packet(packet_receive_data_t *incoming);
 
 void ssr_cleanup (int reason);
 
@@ -268,6 +277,7 @@ static future_t *start_up(void) {
   startup_future = future_new();
   LOG_DEBUG("%s starting async portion", __func__);
   thread_post(thread, event_finish_startup, NULL);
+  hci_state = HCI_STARTED;
   return startup_future;
 error:;
   shut_down(); // returns NULL so no need to wait for it
@@ -289,6 +299,8 @@ static future_t *shut_down() {
 
     thread_join(thread);
   }
+
+  hci_state = HCI_SHUTDOWN;
 
   fixed_queue_free(command_queue, osi_free);
   fixed_queue_free(packet_queue, buffer_allocator->free);
@@ -348,6 +360,11 @@ static void transmit_command(
     command_complete_cb complete_callback,
     command_status_cb status_callback,
     void *context) {
+  if(hci_state != HCI_STARTED) {
+    LOG_ERROR("%s Returning, hci_layer not ready", __func__);
+    return;
+  }
+
   waiting_command_t *wait_entry = osi_calloc(sizeof(waiting_command_t));
   if (!wait_entry) {
     LOG_ERROR("%s couldn't allocate space for wait entry.", __func__);
@@ -393,6 +410,10 @@ static void transmit_downward(data_dispatcher_type_t type, void *data) {
     transmit_command((BT_HDR *)data, NULL, NULL, NULL);
     LOG_WARN("%s legacy transmit of command. Use transmit_command instead.", __func__);
   } else {
+    if(hci_state != HCI_STARTED) {
+      LOG_ERROR("%s Returning, hci_layer not ready", __func__);
+      return;
+    }
     fixed_queue_enqueue(packet_queue, data);
   }
 }
@@ -547,32 +568,22 @@ static void command_timed_out(UNUSED_ATTR void *context) {
 // This function is not required to read all of a packet in one go, so
 // be wary of reentry. But this function must return after finishing a packet.
 static void hal_says_data_ready(serial_data_type_t type) {
+  LOG_VERBOSE("%s", __func__);
+
   packet_receive_data_t *incoming = &incoming_packets[PACKET_TYPE_TO_INBOUND_INDEX(type)];
 
 #ifdef QCOM_WCN_SSR
-  uint8_t dev_ssr_event[3] = { 0x10, 0x01, 0x0A };
   uint8_t reset;
 #endif
 
   uint8_t byte;
   while (hal->read_data(type, &byte, 1, false) != 0) {
+    LOG_VERBOSE("%s, incoming state is %d", __func__, incoming->state);
 #ifdef QCOM_WCN_SSR
     reset = hal->dev_in_reset();
     if (reset) {
-      incoming = &incoming_packets[PACKET_TYPE_TO_INBOUND_INDEX(type = DATA_TYPE_EVENT)];
-      incoming->buffer = (BT_HDR *)buffer_allocator->alloc(BT_HDR_SIZE + 3);
-      if (incoming->buffer) {
-        LOG_ERROR("sending H/w error event to stack\n ");
-        incoming->buffer->offset = 0;
-        incoming->buffer->layer_specific = 0;
-        incoming->buffer->event = MSG_HC_TO_STACK_HCI_EVT;
-        incoming->index = 3;
-        memcpy(incoming->buffer->data, &dev_ssr_event, 3);
-        incoming->state = FINISHED;
-      } else {
-        LOG_ERROR("error getting buffer for H/W event\n ");
+      if(!create_hw_reset_evt_packet(incoming))
         break;
-      }
     } else
 #endif
     {
@@ -594,6 +605,15 @@ static void hal_says_data_ready(serial_data_type_t type) {
           incoming->bytes_remaining = (type == DATA_TYPE_ACL) ? RETRIEVE_ACL_LENGTH(incoming->preamble) : byte;
 
           size_t buffer_size = BT_HDR_SIZE + incoming->index + incoming->bytes_remaining;
+
+          if (buffer_size > GKI_MAX_BUF_SIZE) {
+            LOG_ERROR("%s buffer_size(%d) exceeded allowed packet size, allocation not possible", __func__, buffer_size);
+            if(create_hw_reset_evt_packet(incoming))
+              break;
+            else
+              return;
+          }
+
           incoming->buffer = (BT_HDR *)buffer_allocator->alloc(buffer_size);
 
           if (!incoming->buffer) {
@@ -643,6 +663,8 @@ static void hal_says_data_ready(serial_data_type_t type) {
     }
 
     if (incoming->state == FINISHED) {
+      LOG_VERBOSE("%s, finished receiving", __func__);
+
       incoming->buffer->len = incoming->index;
       btsnoop->capture(incoming->buffer, true);
 
@@ -654,6 +676,7 @@ static void hal_says_data_ready(serial_data_type_t type) {
         uint8_t event_code;
         STREAM_TO_UINT8(event_code, stream);
 
+        LOG_VERBOSE("%s, dispatch packet", __func__);
         data_dispatcher_dispatch(
           interface.event_dispatcher,
           event_code,
@@ -669,6 +692,7 @@ static void hal_says_data_ready(serial_data_type_t type) {
       // We return after a packet is finished for two reasons:
       // 1. The type of the next packet could be different.
       // 2. We don't want to hog cpu time.
+      LOG_VERBOSE("%s, return back", __func__);
       return;
     }
   }
@@ -744,8 +768,13 @@ intercepted:;
 ** and turns off the chip*/
 void ssr_cleanup (int reason) {
    LOG_INFO("%s", __func__);
+   if(hci_state != HCI_STARTED) {
+     LOG_ERROR("%s Returning, hci_layer already shut down", __func__);
+     return;
+   }
    if (vendor != NULL) {
        vendor->ssr_cleanup(reason);
+       hal->close(); //clean up the UART stream
    } else {
        LOG_ERROR("%s: vendor is NULL", __func__);
    }
@@ -842,6 +871,26 @@ static void init_layer_interface() {
     interface.transmit_downward = transmit_downward;
     interface.ssr_cleanup = ssr_cleanup;
     interface_created = true;
+  }
+}
+
+static bool create_hw_reset_evt_packet(packet_receive_data_t *incoming) {
+  serial_data_type_t type;
+  uint8_t dev_ssr_event[3] = { 0x10, 0x01, 0x0A };
+  incoming = &incoming_packets[PACKET_TYPE_TO_INBOUND_INDEX(type = DATA_TYPE_EVENT)];
+  incoming->buffer = (BT_HDR *)buffer_allocator->alloc(BT_HDR_SIZE + 3);
+  if (incoming->buffer) {
+    LOG_ERROR("sending H/w error event to stack\n ");
+    incoming->buffer->offset = 0;
+    incoming->buffer->layer_specific = 0;
+    incoming->buffer->event = MSG_HC_TO_STACK_HCI_EVT;
+    incoming->index = 3;
+    memcpy(incoming->buffer->data, &dev_ssr_event, 3);
+    incoming->state = FINISHED;
+    return true;
+  } else {
+    LOG_ERROR("error getting buffer for H/W event\n ");
+    return false;
   }
 }
 
