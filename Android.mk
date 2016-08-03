@@ -15,7 +15,7 @@ bdroid_CFLAGS += -DQLOGKIT_USERDEBUG
 endif
 endif
 
-ifeq ($(BOARD_HAS_QCA_BT_ROME),true))
+ifeq ($(BOARD_HAS_QCA_BT_ROME),true)
 bdroid_CFLAGS += -DQCA_BT_ROME
 endif
 
